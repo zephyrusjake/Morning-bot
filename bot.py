@@ -5,7 +5,7 @@ import requests
 from telegram import Bot
 import yfinance as yf
 
-# 본인의 텔레그램 봇 토큰과 챗 아이디 입력
+# 입력해주신 텔레그램 봇 토큰과 챗 아이디 반영 완료
 TOKEN = "8834121678:AAFlOyVnXLiDaHuKEWACZg320ZJQWxzBXw0"
 CHAT_ID = "495759757"
 
@@ -22,15 +22,9 @@ def get_adr():
 
     if response.status_code == 200:
       soup = BeautifulSoup(response.text, "html.parser")
-      # adrinfo.kr의 구조에 맞춰 코스피 ADR 값 추출 (텍스트 매칭 또는 첫 번째 퍼센트 값 활용)
-      # 사이트 구조 변경에 대비해 안전하게 텍스트 검색 수행
       text = soup.get_text()
-      # 'KOSPI' 글자 근처의 퍼센트 값을 찾는 로직 등 적용 가능
-      # 기본 메인 페이지의 KOSPI ADR 표출부 파싱
-      # 예시로 최신 구조의 요약 텍스트에서 KOSPI 항목 뒤의 수치 추출
       import re
 
-      # KOSPI 뒤에 나오는 첫 번째 숫자+% 패턴 찾기
       match = re.search(r"KOSPI.*?([\d.]+%)", text, re.DOTALL)
       if match:
         return match.group(1)
@@ -43,7 +37,7 @@ def get_financial_data():
   report = []
   report.append(f"📊 [모닝 금융 브리핑] ({datetime.today().strftime('%Y-%m-%d')})\n")
 
-  # 1. 환율, WTI 유가, 미국 국채 10년물
+  # 1. 환율, WTI 유가, 미국 국채 10년물, 코스피 ADR
   try:
     ticker_data = yf.download(
         ["^TNX", "KRW=X", "CL=F"], period="2d", progress=False
@@ -57,7 +51,6 @@ def get_financial_data():
     report.append(f"- WTI 유가: ${wti:.2f}")
     report.append(f"- 미국 국채 10년물: {us10y:.2f}%")
 
-    # 코스피 ADR 추가
     kospi_adr = get_adr()
     report.append(f"- 코스피 ADR (adrinfo.kr): {kospi_adr}\n")
   except Exception:
@@ -111,28 +104,16 @@ def get_financial_data():
   except Exception:
     report.append("❌ 국내 시총 수집 에러\n")
 
-  # 4. 하이닉스(A), SKNY(B) 주가 및 C값, 비율 계산
+  # 4. 마이크론(Micron) 시총 Billion 단위 추가
   try:
-    hynix = yf.Ticker("000660.KS")  # A: 코스피 하이닉스 주가 (원)
-    skny = yf.Ticker("SKNY")  # B: 나스닥 SKNY 주가 (달러)
+    micron = yf.Ticker("MU")
+    micron_mcap = micron.info.get("marketCap", 0)
+    micron_B = micron_mcap / 1_000_000_000
 
-    A = hynix.history(period="1d")["Close"].iloc[-1]
-    B = skny.history(period="1d")["Close"].iloc[-1]
-
-    # C = A / 원달러환율 / 10
-    C = (A / krw_usd) / 10
-
-    # C / B 비율 계산 (퍼센트 형태로 표현하기 위해 x100 또는 순수 배율 확인 - 요청하신 C/B 값 계산)
-    # 만약 퍼센트로 보고 싶다면 (C / B) * 100 형태로 응용 가능하며, 여기서는 C/B 비율 값 자체를 명시합니다.
-    c_b_ratio = (C / B) * 100 if B != 0 else 0
-
-    report.append("📈 **하이닉스 & SKNY 비교 분석**")
-    report.append(f"- 코스피 하이닉스 주가 (A): {A:,.0f}원")
-    report.append(f"- 나스닥 SKNY 주가 (B): ${B:,.2f}")
-    report.append(f"- 계산된 C값 (A / 환율 / 10): ${C:,.2f}")
-    report.append(f"- C / B 비율: **{c_b_ratio:.2f}%**")
+    report.append("💾 **마이크론 시가총액**")
+    report.append(f"- Micron (MU): ${micron_B:,.2f}B")
   except Exception:
-    report.append("❌ 개별 종목 주가 수집 에러")
+    report.append("❌ 마이크론 시총 수집 에러")
 
   return "\n".join(report)
 
