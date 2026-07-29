@@ -12,6 +12,27 @@ CHAT_ID = "495759757"
 bot = Bot(token=TOKEN)
 
 
+def get_adr_sentiment(adr_str):
+  """ADR 수치에 따른 시장 판단 기준 반환"""
+  try:
+    import re
+
+    val = float(re.sub(r"[^\d.]", "", adr_str))
+
+    if val >= 120:
+      return f"{adr_str} (과열권)"
+    elif val > 100:
+      return f"{adr_str} (상승 우위)"
+    elif val == 100:
+      return f"{adr_str} (균형)"
+    elif val > 75:
+      return f"{adr_str} (조정/약세 우위)"
+    else:
+      return f"{adr_str} (바닥권)"
+  except Exception:
+    return adr_str
+
+
 def get_adr():
   """adrinfo.kr에서 코스피 ADR 값을 크롤링하는 함수"""
   try:
@@ -27,7 +48,8 @@ def get_adr():
 
       match = re.search(r"KOSPI.*?([\d.]+%)", text, re.DOTALL)
       if match:
-        return match.group(1)
+        raw_adr = match.group(1)
+        return get_adr_sentiment(raw_adr)
     return "조회 실패"
   except Exception:
     return "수집 에러"
@@ -101,7 +123,7 @@ def get_financial_data():
     report.append(f"- 공포지수(VIX): {vix:.2f} ({vix_sentiment})")
 
     kospi_adr = get_adr()
-    report.append(f"- 코스피 ADR (adrinfo.kr): {kospi_adr}\n")
+    report.append(f"- 코스피 ADR: {kospi_adr}\n")
   except Exception:
     report.append("❌ 거시 지표 수집 에러\n")
     krw_usd = 1350
