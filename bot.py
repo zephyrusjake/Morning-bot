@@ -57,6 +57,18 @@ def calc_change(series):
     return "N/A"
 
 
+def get_vix_sentiment(vix_val):
+  """VIX 수치에 따른 시장 심리 상태 반환"""
+  if vix_val < 15:
+    return "탐욕/안정"
+  elif vix_val < 20:
+    return "보통"
+  elif vix_val < 30:
+    return "공포/주의"
+  else:
+    return "극단적 공포"
+
+
 def get_financial_data():
   report = []
 
@@ -66,13 +78,12 @@ def get_financial_data():
 
   report.append(f"📊 [금융 브리핑] ({current_time})\n")
 
-  # 1. 거시 지표 및 변동성 지수 (전일 대비 % 포함)
+  # 1. 거시 지표 및 변동성 지수
   try:
     tickers = ["^TNX", "KRW=X", "CL=F", "^VIX"]
     ticker_data = yf.download(tickers, period="2d", progress=False)["Close"]
 
     us10y = ticker_data["^TNX"].iloc[-1]
-    us10y_chg = calc_change(ticker_data["^TNX"])
 
     krw_usd = ticker_data["KRW=X"].iloc[-1]
     krw_chg = calc_change(ticker_data["KRW=X"])
@@ -81,13 +92,13 @@ def get_financial_data():
     wti_chg = calc_change(ticker_data["CL=F"])
 
     vix = ticker_data["^VIX"].iloc[-1]
-    vix_chg = calc_change(ticker_data["^VIX"])
+    vix_sentiment = get_vix_sentiment(vix)
 
     report.append("📌 **주요 거시 지표 및 변동성**")
     report.append(f"- 원/달러 환율: {krw_usd:,.2f}원 ({krw_chg})")
     report.append(f"- WTI 유가: ${wti:.2f} ({wti_chg})")
-    report.append(f"- 미국 국채 10년물: {us10y:.2f}% ({us10y_chg})")
-    report.append(f"- 공포지수(VIX): {vix:.2f} ({vix_chg})")
+    report.append(f"- 미국 국채 10년물: {us10y:.2f}%")
+    report.append(f"- 공포지수(VIX): {vix:.2f} ({vix_sentiment})")
 
     kospi_adr = get_adr()
     report.append(f"- 코스피 ADR (adrinfo.kr): {kospi_adr}\n")
