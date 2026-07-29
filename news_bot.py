@@ -2,6 +2,7 @@ from datetime import datetime, timezone, timedelta
 import asyncio
 import xml.etree.ElementTree as ET
 import urllib.parse
+from deep_translator import GoogleTranslator
 import requests
 from telegram import Bot
 
@@ -11,8 +12,16 @@ CHAT_ID = "495759757"
 bot = Bot(token=TOKEN)
 
 
+def translate_text(text):
+  """영문 텍스트를 한국어로 번역하는 함수"""
+  try:
+    return GoogleTranslator(source="en", target="ko").translate(text)
+  except Exception:
+    return text  # 번역 실패 시 원문 반환
+
+
 def get_google_news(query, lang_kr=True):
-  """구글 뉴스 RSS를 이용해 키워드 뉴스 수집 (국내/영문 겸용)"""
+  """구글 뉴스 RSS를 이용해 키워드 뉴스 수집 및 영문은 한글 번역"""
   try:
     encoded_query = urllib.parse.quote(query)
     hl = "ko" if lang_kr else "en"
@@ -31,6 +40,11 @@ def get_google_news(query, lang_kr=True):
       for item in items:
         title = item.find("title").text
         link = item.find("link").text
+
+        # 영문 뉴스인 경우 제목을 한국어로 번역
+        if not lang_kr:
+          title = translate_text(title)
+
         news_list.append(f"• [{title}]({link})")
 
       if news_list:
@@ -44,16 +58,16 @@ async def main():
   kst = timezone(timedelta(hours=9))
   current_time = datetime.now(kst).strftime("%Y-%m-%d %H:%M")
 
-  # 1. 국내 뉴스 (반도체, 삼성전자, 하이닉스)
+  # 1. 국내 뉴스 (한국어)
   kr_news = get_google_news("반도체 삼성전자 하이닉스", lang_kr=True)
-  # 2. 글로벌 영문 뉴스 (semiconductor, sk hynix)
+  # 2. 글로벌 영문 뉴스 (가져오면서 한국어로 자동 번역)
   global_news = get_google_news("semiconductor sk hynix", lang_kr=False)
 
   report = [
       f"📰 **[반도체 뉴스 브리핑]** ({current_time})\n",
       "🇰🇷 **[국내 주요 뉴스]**",
       kr_news,
-      "\n🌍 **[글로벌 영문 뉴스]**",
+      "\n🌍 **[글로벌 뉴스 (번역)]**",
       global_news,
   ]
 
