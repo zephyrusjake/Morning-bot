@@ -68,13 +68,17 @@ def get_forward_pe(stock):
 
 
 def calc_change(series):
-  """전일 대비 등락률(%) 계산 함수"""
+  """전일 대비 등락률(%) 계산 함수 (상승: ▲, 하락: 🔻)"""
   try:
     prev = series.iloc[-2]
     curr = series.iloc[-1]
     rate = ((curr - prev) / prev) * 100
-    sign = "+" if rate > 0 else ""
-    return f"{sign}{rate:.2f}%"
+    if rate > 0:
+      return f"+{rate:.2f}% ▲"
+    elif rate < 0:
+      return f"{rate:.2f}% 🔻"
+    else:
+      return f"0.00%"
   except Exception:
     return "N/A"
 
@@ -100,9 +104,9 @@ def get_financial_data():
 
   report.append(f"📊 [금융 브리핑] ({current_time})\n")
 
-  # 1. 거시 지표, 변동성 지수 및 필라델피아 반도체 지수
+  # 1. 거시 지표 및 변동성 지수
   try:
-    tickers = ["^TNX", "KRW=X", "CL=F", "^VIX", "^SOX"]
+    tickers = ["^TNX", "KRW=X", "CL=F", "^VIX", "^SOX", "MU"]
     ticker_data = yf.download(tickers, period="2d", progress=False)["Close"]
 
     us10y = ticker_data["^TNX"].iloc[-1]
@@ -119,11 +123,13 @@ def get_financial_data():
     sox = ticker_data["^SOX"].iloc[-1]
     sox_chg = calc_change(ticker_data["^SOX"])
 
-    report.append("📌 **주요 거시 지표 및 반도체/변동성**")
+    mu_price = ticker_data["MU"].iloc[-1]
+    mu_chg = calc_change(ticker_data["MU"])
+
+    report.append("📌 **주요 거시 지표 및 변동성**")
     report.append(f"- 원/달러 환율: {krw_usd:,.2f}원 ({krw_chg})")
     report.append(f"- WTI 유가: ${wti:.2f} ({wti_chg})")
     report.append(f"- 미국 국채 10년물: {us10y:.2f}%")
-    report.append(f"- 필라델피아 반도체: {sox:,.2f} ({sox_chg})")
     report.append(f"- 공포지수(VIX): {vix:.2f} ({vix_sentiment})")
 
     kospi_adr = get_adr()
@@ -131,6 +137,10 @@ def get_financial_data():
   except Exception:
     report.append("❌ 거시 지표 수집 에러\n")
     krw_usd = 1350
+    mu_price = 0
+    mu_chg = "0.00%"
+    sox = 0
+    sox_chg = "0.00%"
 
   # 2. 글로벌 시총 1, 2, 3위 (Billion 단위 및 Forward PE)
   try:
@@ -181,7 +191,7 @@ def get_financial_data():
   except Exception:
     report.append("❌ 국내 시총 수집 에러\n")
 
-  # 4. 마이크론(Micron) 시총 Billion 단위 및 Forward PE 추가
+  # 4. 마이크론 시가총액, 주가 및 필라델피아 반도체 지수
   try:
     micron = yf.Ticker("MU")
     micron_mcap = micron.info.get("marketCap", 0)
@@ -190,6 +200,8 @@ def get_financial_data():
 
     report.append("💾 **마이크론 시가총액 & Forward PE**")
     report.append(f"- Micron (MU): ${micron_B:,.2f}B (Fwd PE: {micron_fpe})")
+    report.append(f"- 마이크론 주가: ${mu_price:,.2f} ({mu_chg})")
+    report.append(f"- 필라델피아 반도체: {sox:,.2f} ({sox_chg})")
   except Exception:
     report.append("❌ 마이크론 시총 수집 에러")
 
