@@ -100,9 +100,9 @@ def get_financial_data():
 
   report.append(f"📊 [금융 브리핑] ({current_time})\n")
 
-  # 1. 거시 지표 및 변동성 지수
+  # 1. 거시 지표, 변동성 지수 및 필라델피아 반도체 지수
   try:
-    tickers = ["^TNX", "KRW=X", "CL=F", "^VIX"]
+    tickers = ["^TNX", "KRW=X", "CL=F", "^VIX", "^SOX"]
     ticker_data = yf.download(tickers, period="2d", progress=False)["Close"]
 
     us10y = ticker_data["^TNX"].iloc[-1]
@@ -116,10 +116,14 @@ def get_financial_data():
     vix = ticker_data["^VIX"].iloc[-1]
     vix_sentiment = get_vix_sentiment(vix)
 
-    report.append("📌 **주요 거시 지표 및 변동성**")
+    sox = ticker_data["^SOX"].iloc[-1]
+    sox_chg = calc_change(ticker_data["^SOX"])
+
+    report.append("📌 **주요 거시 지표 및 반도체/변동성**")
     report.append(f"- 원/달러 환율: {krw_usd:,.2f}원 ({krw_chg})")
     report.append(f"- WTI 유가: ${wti:.2f} ({wti_chg})")
     report.append(f"- 미국 국채 10년물: {us10y:.2f}%")
+    report.append(f"- 필라델피아 반도체: {sox:,.2f} ({sox_chg})")
     report.append(f"- 공포지수(VIX): {vix:.2f} ({vix_sentiment})")
 
     kospi_adr = get_adr()
@@ -156,7 +160,7 @@ def get_financial_data():
   # 3. 한국 시총 1, 2위 (Billion 단위, USD 환산 및 Forward PE)
   try:
     kr_tickers = {
-        "Samsung Electronics": "005930.KS",
+        "삼성전자": "005930.KS",
         "SK Hynix": "000660.KS",
         "LG Energy Solution": "373220.KS",
     }
