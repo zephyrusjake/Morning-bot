@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import asyncio
 from bs4 import BeautifulSoup
 import requests
@@ -47,7 +47,11 @@ def get_forward_pe(stock):
 
 def get_financial_data():
   report = []
-  current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+  # 한국 시간(KST, UTC+9) 계산
+  kst = timezone(timedelta(hours=9))
+  current_time = datetime.now(kst).strftime("%Y-%m-%d %H:%M")
+
   report.append(f"📊 [금융 브리핑] ({current_time})\n")
 
   # 1. 환율, WTI 유가, 미국 국채 10년물, 코스피 ADR
