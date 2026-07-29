@@ -68,7 +68,7 @@ def get_forward_pe(stock):
 
 
 def calc_change(series):
-  """전일 대비 등락률(%) 계산 함수 (상승: 부호 없음, 하락: 속이 빈 아래 삼각형 ▽)"""
+  """전일 대비 등락률(%) 계산 함수 (삼각형 제거)"""
   try:
     prev = series.iloc[-2]
     curr = series.iloc[-1]
@@ -76,7 +76,7 @@ def calc_change(series):
     if rate > 0:
       return f"+{rate:.2f}%"
     elif rate < 0:
-      return f"{rate:.2f}% ▽"
+      return f"{rate:.2f}%"
     else:
       return f"0.00%"
   except Exception:
