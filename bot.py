@@ -34,10 +34,9 @@ def get_adr():
 
 
 def get_forward_pe(stock):
-  """26년 Forward PE를 안전하게 가져오는 함수 (야후파이낸스 forwardPE 활용)"""
+  """26년 Forward PE를 안전하게 가져오는 함수"""
   try:
     info = stock.info
-    # 일반적인 forwardPE 속성 확인
     fpe = info.get("forwardPE")
     if fpe:
       return f"{fpe:.2f}"
@@ -48,7 +47,8 @@ def get_forward_pe(stock):
 
 def get_financial_data():
   report = []
-  report.append(f"📊 [모닝 금융 브리핑] ({datetime.today().strftime('%Y-%m-%d')})\n")
+  current_time = datetime.now().strftime("%Y-%m-%d %H:%M")
+  report.append(f"📊 [금융 브리핑] ({current_time})\n")
 
   # 1. 환율, WTI 유가, 미국 국채 10년물, 코스피 ADR
   try:
@@ -70,7 +70,7 @@ def get_financial_data():
     report.append("❌ 거시 지표 수집 에러\n")
     krw_usd = 1350
 
-  # 2. 글로벌 시총 1, 2, 3위 (Billion 단위 및 26년 Forward PE)
+  # 2. 글로벌 시총 1, 2, 3위 (Billion 단위 및 Forward PE)
   try:
     global_tickers = {
         "Apple": "AAPL",
@@ -95,7 +95,7 @@ def get_financial_data():
   except Exception:
     report.append("❌ 글로벌 시총 수집 에러\n")
 
-  # 3. 한국 시총 1, 2위 (Billion 단위, USD 환산 및 26년 Forward PE)
+  # 3. 한국 시총 1, 2위 (Billion 단위, USD 환산 및 Forward PE)
   try:
     kr_tickers = {
         "Samsung Electronics": "005930.KS",
