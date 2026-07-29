@@ -45,6 +45,18 @@ def get_forward_pe(stock):
     return "N/A"
 
 
+def calc_change(series):
+  """전일 대비 등락률(%) 계산 함수"""
+  try:
+    prev = series.iloc[-2]
+    curr = series.iloc[-1]
+    rate = ((curr - prev) / prev) * 100
+    sign = "+" if rate > 0 else ""
+    return f"{sign}{rate:.2f}%"
+  except Exception:
+    return "N/A"
+
+
 def get_financial_data():
   report = []
 
@@ -54,19 +66,28 @@ def get_financial_data():
 
   report.append(f"📊 [금융 브리핑] ({current_time})\n")
 
-  # 1. 환율, WTI 유가, 미국 국채 10년물, 코스피 ADR
+  # 1. 거시 지표 및 변동성 지수 (전일 대비 % 포함)
   try:
-    ticker_data = yf.download(
-        ["^TNX", "KRW=X", "CL=F"], period="2d", progress=False
-    )["Close"]
-    us10y = ticker_data["^TNX"].iloc[-1]
-    krw_usd = ticker_data["KRW=X"].iloc[-1]
-    wti = ticker_data["CL=F"].iloc[-1]
+    tickers = ["^TNX", "KRW=X", "CL=F", "^VIX"]
+    ticker_data = yf.download(tickers, period="2d", progress=False)["Close"]
 
-    report.append("📌 **주요 거시 지표 및 ADR**")
-    report.append(f"- 원/달러 환율: {krw_usd:,.2f}원")
-    report.append(f"- WTI 유가: ${wti:.2f}")
-    report.append(f"- 미국 국채 10년물: {us10y:.2f}%")
+    us10y = ticker_data["^TNX"].iloc[-1]
+    us10y_chg = calc_change(ticker_data["^TNX"])
+
+    krw_usd = ticker_data["KRW=X"].iloc[-1]
+    krw_chg = calc_change(ticker_data["KRW=X"])
+
+    wti = ticker_data["CL=F"].iloc[-1]
+    wti_chg = calc_change(ticker_data["CL=F"])
+
+    vix = ticker_data["^VIX"].iloc[-1]
+    vix_chg = calc_change(ticker_data["^VIX"])
+
+    report.append("📌 **주요 거시 지표 및 변동성**")
+    report.append(f"- 원/달러 환율: {krw_usd:,.2f}원 ({krw_chg})")
+    report.append(f"- WTI 유가: ${wti:.2f} ({wti_chg})")
+    report.append(f"- 미국 국채 10년물: {us10y:.2f}% ({us10y_chg})")
+    report.append(f"- 공포지수(VIX): {vix:.2f} ({vix_chg})")
 
     kospi_adr = get_adr()
     report.append(f"- 코스피 ADR (adrinfo.kr): {kospi_adr}\n")
